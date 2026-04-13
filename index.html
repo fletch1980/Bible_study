@@ -1,0 +1,456 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Bible Study Hub</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { background: #0a0a1a; font-family: system-ui, sans-serif; min-height: 100vh; padding: 20px 16px 60px; color: white; }
+
+    .header { text-align: center; padding: 24px 0 20px; }
+    .header .icon { font-size: 40px; margin-bottom: 6px; }
+    .header h1 { font-size: 26px; font-weight: 900; }
+    .header p { font-size: 13px; color: #9ca3af; margin-top: 4px; }
+
+    .stats-row { display: flex; gap: 10px; margin-bottom: 16px; }
+    .stat-card { flex: 1; background: #12122a; border-radius: 14px; padding: 14px; text-align: center; border: 1px solid #1e1e40; }
+    .stat-val { font-size: 2rem; font-weight: 900; color: #a78bfa; }
+    .stat-val.fire { color: #fb923c; }
+    .stat-lbl { font-size: 10px; color: #6b7280; margin-top: 2px; text-transform: uppercase; letter-spacing: 1px; }
+
+    .cal-box { background: #12122a; border-radius: 16px; padding: 16px 18px; margin-bottom: 16px; border: 1px solid #1e1e40; }
+    .cal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; }
+    .cal-title { font-size: 15px; font-weight: 800; }
+    .cal-nav { background: #1e1b4b; border: 1px solid #4338ca55; color: #a78bfa; border-radius: 8px; padding: 4px 12px; font-size: 13px; cursor: pointer; }
+    .cal-days-hdr { display: grid; grid-template-columns: repeat(7,1fr); gap: 4px; margin-bottom: 6px; }
+    .cal-days-hdr span { text-align: center; font-size: 10px; color: #6b7280; font-weight: 700; }
+    .cal-grid { display: grid; grid-template-columns: repeat(7,1fr); gap: 4px; }
+    .cal-day { aspect-ratio: 1; border-radius: 8px; display: flex; flex-direction: column; align-items: center; justify-content: center; font-size: 11px; font-weight: 600; color: #6b7280; background: #0d0d1f; border: 1.5px solid transparent; cursor: pointer; transition: border-color 0.15s; }
+    .cal-day:hover { border-color: #4338ca88; color: #a78bfa; }
+    .cal-day.today { border-color: #6366f1; color: white; }
+    .cal-day.future { opacity: 0.3; cursor: default; pointer-events: none; }
+    .cal-day.empty { background: transparent; border-color: transparent; cursor: default; pointer-events: none; }
+    .cal-day.studied { color: white; }
+    .dot-row { display: flex; gap: 2px; margin-top: 2px; flex-wrap: wrap; justify-content: center; max-width: 32px; }
+    .dot { width: 5px; height: 5px; border-radius: 50%; flex-shrink: 0; }
+    .legend { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
+    .leg-item { display: flex; align-items: center; gap: 4px; font-size: 10px; color: #9ca3af; }
+    .leg-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+
+    .verse-box { background: #12122a; border: 1px solid #1e1e40; border-radius: 16px; padding: 16px 18px; margin-bottom: 16px; }
+    .verse-label { font-size: 10px; font-weight: 700; letter-spacing: 1.5px; color: #6366f1; text-transform: uppercase; margin-bottom: 8px; }
+    .verse-text { font-size: 14px; color: #e2e8f0; line-height: 1.6; font-style: italic; }
+    .verse-ref { font-size: 12px; color: #6366f1; margin-top: 8px; font-weight: 700; }
+
+    .collapse-card { border-radius: 16px; margin-bottom: 14px; overflow: hidden; }
+    .collapse-trigger { width: 100%; display: flex; justify-content: space-between; align-items: center; padding: 16px 18px; cursor: pointer; border: none; background: transparent; text-align: left; }
+    .ct-left { display: flex; align-items: center; gap: 12px; }
+    .ct-icon { font-size: 22px; }
+    .ct-title { font-size: 16px; font-weight: 800; color: white; }
+    .ct-sub { font-size: 11px; color: rgba(255,255,255,0.6); margin-top: 2px; }
+    .ct-arrow { font-size: 12px; font-weight: 700; color: rgba(255,255,255,0.7); background: rgba(255,255,255,0.12); border-radius: 20px; padding: 4px 10px; white-space: nowrap; }
+    .collapsible { overflow: hidden; max-height: 0; transition: max-height 0.35s ease; }
+    .collapsible.open { max-height: 9999px; }
+    .collapse-body { padding: 0 16px 18px; }
+
+    .app-card { display: block; text-decoration: none; border-radius: 12px; padding: 14px 16px; color: white; position: relative; overflow: hidden; margin-bottom: 10px; transition: transform 0.15s, opacity 0.15s; }
+    .app-card:active { transform: scale(0.97); opacity: 0.9; }
+    .app-card-icon { font-size: 22px; margin-bottom: 4px; }
+    .app-card-title { font-size: 15px; font-weight: 800; }
+    .app-card-sub { font-size: 11px; opacity: 0.82; margin-top: 2px; padding-right: 64px; }
+    .app-card-badge { position: absolute; top: 12px; right: 12px; background: rgba(255,255,255,0.2); border-radius: 20px; padding: 3px 8px; font-size: 10px; font-weight: 700; }
+    .progress-bar-wrap { margin-top: 8px; background: rgba(255,255,255,0.15); border-radius: 20px; height: 4px; }
+    .progress-bar { height: 4px; border-radius: 20px; }
+
+    .sec-plans { background: linear-gradient(135deg,#1e1b4b,#312e81); border: 1px solid #4338ca55; }
+    .sec-tools { background: linear-gradient(135deg,#1a0a2e,#2d1b4e); border: 1px solid #7c3aed55; }
+    .sec-know  { background: linear-gradient(135deg,#0f2027,#1a3a4a); border: 1px solid #0369a155; }
+
+    .modal-bg { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.8); z-index: 50; align-items: flex-end; justify-content: center; }
+    .modal-bg.open { display: flex; }
+    .modal { background: #12122a; border-radius: 20px 20px 0 0; padding: 24px 20px 36px; width: 100%; max-width: 480px; border-top: 1px solid #1e1e40; max-height: 90vh; overflow-y: auto; }
+    .modal h3 { color: white; font-size: 17px; font-weight: 800; margin-bottom: 4px; }
+    .modal-date { font-size: 12px; color: #6b7280; margin-bottom: 18px; }
+    .modal-label { font-size: 11px; font-weight: 700; letter-spacing: 1px; color: #a78bfa; text-transform: uppercase; margin-bottom: 10px; display: block; }
+    .check-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 20px; }
+    .check-item { background: #0d0d1f; border: 1.5px solid #1e1e40; border-radius: 10px; padding: 10px 12px; display: flex; align-items: center; gap: 8px; cursor: pointer; transition: all 0.2s; }
+    .check-item.checked { border-color: #6366f1; background: #1e1b4b; }
+    .check-item .ci-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
+    .check-item .ci-name { font-size: 12px; color: #d8b4fe; font-weight: 600; }
+    .modal-btns { display: flex; gap: 10px; }
+    .btn-save { flex: 1; background: linear-gradient(135deg,#4338ca,#6366f1); border: none; border-radius: 10px; color: white; font-size: 14px; font-weight: 700; padding: 12px; cursor: pointer; }
+    .btn-cancel { background: #0d0d1f; border: 1px solid #1e1e40; border-radius: 10px; color: #9ca3af; font-size: 14px; padding: 12px 18px; cursor: pointer; }
+    .btn-clear { background: #1a0010; border: 1px solid #ef444455; border-radius: 10px; color: #ef4444; font-size: 14px; font-weight: 700; padding: 12px 16px; cursor: pointer; }
+
+    .toast { position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%); background: #4338ca; color: white; padding: 10px 22px; border-radius: 20px; font-size: 14px; font-weight: 700; z-index: 99; pointer-events: none; opacity: 0; transition: opacity 0.2s; }
+    .toast.show { opacity: 1; }
+    .footer { text-align: center; color: #1e1e40; font-size: 12px; margin-top: 24px; }
+  </style>
+</head>
+<body>
+
+<div class="header">
+  <div class="icon">✝️</div>
+  <h1>Bible Study Hub</h1>
+  <p>Deepen your faith, day by day</p>
+</div>
+
+<div class="stats-row">
+  <div class="stat-card"><div class="stat-val fire" id="streakVal">0</div><div class="stat-lbl">🔥 Streak</div></div>
+  <div class="stat-card"><div class="stat-val" id="totalVal">0</div><div class="stat-lbl">📖 Total Days</div></div>
+  <div class="stat-card"><div class="stat-val" id="monthVal">0</div><div class="stat-lbl">📅 This Month</div></div>
+</div>
+
+<div class="cal-box">
+  <div class="cal-header">
+    <button class="cal-nav" onclick="changeMonth(-1)">◀</button>
+    <div class="cal-title" id="calTitle"></div>
+    <button class="cal-nav" onclick="changeMonth(1)">▶</button>
+  </div>
+  <div class="cal-days-hdr">
+    <span>Su</span><span>Mo</span><span>Tu</span><span>We</span><span>Th</span><span>Fr</span><span>Sa</span>
+  </div>
+  <div class="cal-grid" id="calGrid"></div>
+  <div class="legend" id="calLegend"></div>
+</div>
+
+<div class="verse-box">
+  <div class="verse-label">✨ Verse of the Day</div>
+  <div class="verse-text" id="verseText"></div>
+  <div class="verse-ref" id="verseRef"></div>
+</div>
+
+<div class="collapse-card sec-plans">
+  <button class="collapse-trigger" onclick="toggle('plansBody','plansArrow')">
+    <div class="ct-left"><div class="ct-icon">📅</div><div><div class="ct-title">Reading Plans</div><div class="ct-sub">4 plans · Teaching, key verses & study questions</div></div></div>
+    <div class="ct-arrow" id="plansArrow">▼ Show</div>
+  </button>
+  <div id="plansBody" class="collapsible"><div class="collapse-body" id="plansCards"></div></div>
+</div>
+
+<div class="collapse-card sec-tools">
+  <button class="collapse-trigger" onclick="toggle('toolsBody','toolsArrow')">
+    <div class="ct-left"><div class="ct-icon">🛠️</div><div><div class="ct-title">Study Tools</div><div class="ct-sub">Deep Study · Journal · Prayer · Unworthy · Fervent</div></div></div>
+    <div class="ct-arrow" id="toolsArrow">▼ Show</div>
+  </button>
+  <div id="toolsBody" class="collapsible"><div class="collapse-body" id="toolsCards"></div></div>
+</div>
+
+<div class="collapse-card sec-know">
+  <button class="collapse-trigger" onclick="toggle('knowBody','knowArrow')">
+    <div class="ct-left"><div class="ct-icon">📚</div><div><div class="ct-title">Know What You Believe</div><div class="ct-sub">Canons · Differences · Big Questions · Ask AI</div></div></div>
+    <div class="ct-arrow" id="knowArrow">▼ Show</div>
+  </button>
+  <div id="knowBody" class="collapsible"><div class="collapse-body" id="knowCards"></div></div>
+</div>
+
+<div class="footer">Bible Study Hub — built for deeper faith</div>
+
+<div class="modal-bg" id="modalBg">
+  <div class="modal">
+    <h3 id="modalTitle">📅 Log Study</h3>
+    <div class="modal-date" id="modalDateLabel"></div>
+    <span class="modal-label">What did you study?</span>
+    <div class="check-grid" id="checkGrid"></div>
+    <div class="modal-btns">
+      <button class="btn-cancel" onclick="closeModal()">Cancel</button>
+      <button class="btn-clear" id="btnClear" onclick="clearDay()" style="display:none;">🗑 Clear</button>
+      <button class="btn-save" onclick="saveDay()">Save ✓</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+  // ── Data ──────────────────────────────────────────────────────────────────
+
+  var VERSES = [
+    {text:"Your word is a lamp to my feet and a light to my path.",ref:"Psalm 119:105"},
+    {text:"For God so loved the world that he gave his one and only Son, that whoever believes in him shall not perish but have eternal life.",ref:"John 3:16"},
+    {text:"Trust in the LORD with all your heart and lean not on your own understanding.",ref:"Proverbs 3:5"},
+    {text:"I can do all this through him who gives me strength.",ref:"Philippians 4:13"},
+    {text:"The LORD is my shepherd, I lack nothing.",ref:"Psalm 23:1"},
+    {text:"Be strong and courageous. Do not be afraid, for the LORD your God will be with you wherever you go.",ref:"Joshua 1:9"},
+    {text:"In all things God works for the good of those who love him.",ref:"Romans 8:28"},
+    {text:"Those who hope in the LORD will renew their strength. They will soar on wings like eagles.",ref:"Isaiah 40:31"},
+    {text:"For I know the plans I have for you, declares the LORD, plans to prosper you and not to harm you.",ref:"Jeremiah 29:11"},
+    {text:"Come to me, all you who are weary and burdened, and I will give you rest.",ref:"Matthew 11:28"},
+    {text:"Do not be anxious about anything, but in every situation, by prayer and petition, present your requests to God.",ref:"Philippians 4:6"},
+    {text:"The LORD bless you and keep you; the LORD make his face shine on you and be gracious to you.",ref:"Numbers 6:24-25"},
+  ];
+
+  var PLANS = [
+    {id:"gospels", icon:"✝️", name:"The Four Gospels",           sub:"28 days · Matthew, Mark, Luke & John",   total:28,  href:"reading-plans/four-gospels.html",    bg:"linear-gradient(135deg,#4338ca,#6366f1)", badge:"#6366f1", dot:"#6366f1", storageKey:"gospels-plan-v1"},
+    {id:"chron",   icon:"📖", name:"Chronological Bible",        sub:"365 days · The whole Bible in order",    total:365, href:"reading-plans/chronological.html",   bg:"linear-gradient(135deg,#92400e,#f59e0b)", badge:"#f59e0b", dot:"#f59e0b", storageKey:"chronological-plan-v1"},
+    {id:"psalms",  icon:"🎵", name:"Psalms & Proverbs",          sub:"30 days · Wisdom & worship",             total:30,  href:"reading-plans/psalms-proverbs.html", bg:"linear-gradient(135deg,#6b21a8,#a855f7)", badge:"#a855f7", dot:"#a855f7", storageKey:"psalms-plan-v1"},
+    {id:"genesis", icon:"🌍", name:"Genesis — In the Beginning", sub:"25 days · The foundation of everything", total:25,  href:"reading-plans/genesis.html",         bg:"linear-gradient(135deg,#065f46,#10b981)", badge:"#10b981", dot:"#10b981", storageKey:"genesis-plan-v1"},
+  ];
+
+  var TOOLS = [
+    {id:"study",    icon:"🔍", name:"Deep Study",               sub:"Study any passage · SOAP, Inductive, Lectio Divina & more", href:"tools/deep-study.html",                   bg:"linear-gradient(135deg,#1a2e05,#84cc16)", dot:"#84cc16"},
+    {id:"journal",  icon:"📓", name:"Reflection Journal",       sub:"Prompted journaling · Saved history",                       href:"tools/journal.html",                      bg:"linear-gradient(135deg,#881337,#fb7185)", dot:"#fb7185"},
+    {id:"prayer",   icon:"🙏", name:"Prayer Log",               sub:"Record prayers · Mark them answered",                       href:"tools/prayer-log.html",                   bg:"linear-gradient(135deg,#78350f,#fbbf24)", dot:"#fbbf24"},
+    {id:"unworthy", icon:"🔥", name:"Unworthy Abandoned Love",  sub:"291 days · Healing · Letters · Bible · Journal",            href:"https://fletch1980.github.io/Unworthy/", bg:"linear-gradient(135deg,#450a0a,#dc2626)", dot:"#dc2626"},
+    {id:"fervent",  icon:"🔥", name:"Fervent — Study Hub",      sub:"Study Guide · Prayer · Scripture Memory · Discussion",      href:"https://fletch1980.github.io/Fervent/",  bg:"linear-gradient(135deg,#1c1035,#7c3aed)", dot:"#7c3aed"},
+  ];
+
+  var KNOW = [
+    {icon:"📚", name:"Canons & Bibles",   sub:"Protestant, Catholic, Ethiopian, Torah & more", href:"know/canons.html",        bg:"linear-gradient(135deg,#1e3a5f,#3b82f6)"},
+    {icon:"📊", name:"Key Differences",   sub:"Side-by-side comparison of traditions",          href:"know/differences.html",   bg:"linear-gradient(135deg,#14532d,#22c55e)"},
+    {icon:"❓", name:"Big Questions",     sub:"Hard questions answered honestly",               href:"know/big-questions.html", bg:"linear-gradient(135deg,#1c1917,#78716c)"},
+    {icon:"🤖", name:"Ask AI",            sub:"Ask anything about Scripture & theology",        href:"know/ask-ai.html",        bg:"linear-gradient(135deg,#1e1b4b,#818cf8)"},
+  ];
+
+  var DOT_COLORS = {
+    gospels:"#6366f1", chron:"#f59e0b", psalms:"#a855f7", genesis:"#10b981",
+    study:"#84cc16",   journal:"#fb7185", prayer:"#fbbf24",
+    unworthy:"#dc2626", fervent:"#7c3aed"
+  };
+
+  var LEGEND_ITEMS = [
+    {id:"gospels",  label:"Gospels"},
+    {id:"chron",    label:"Chron."},
+    {id:"psalms",   label:"Psalms"},
+    {id:"genesis",  label:"Genesis"},
+    {id:"study",    label:"Study"},
+    {id:"journal",  label:"Journal"},
+    {id:"prayer",   label:"Prayer"},
+    {id:"unworthy", label:"Unworthy"},
+    {id:"fervent",  label:"Fervent"},
+  ];
+
+  var ALL_ITEMS = PLANS.concat(TOOLS);
+
+  var CAL_KEY = 'bsh-calendar-v1';
+
+  // ── Helpers ───────────────────────────────────────────────────────────────
+
+  function todayISO() {
+    var n = new Date();
+    return n.getFullYear() + '-' + pad(n.getMonth()+1) + '-' + pad(n.getDate());
+  }
+  function pad(n) { return n < 10 ? '0'+n : ''+n; }
+  function friendlyDate(iso) {
+    return new Date(iso + 'T12:00:00').toLocaleDateString('en-US', {weekday:'long', month:'long', day:'numeric', year:'numeric'});
+  }
+  function getActivity() {
+    try { return JSON.parse(localStorage.getItem(CAL_KEY) || '{}'); } catch(e) { return {}; }
+  }
+  function setActivity(data) {
+    try { localStorage.setItem(CAL_KEY, JSON.stringify(data)); } catch(e) {}
+  }
+  function getDotColor(id) {
+    return DOT_COLORS[id] || '#fff';
+  }
+
+  // ── Verse of the Day ──────────────────────────────────────────────────────
+
+  var vi = new Date().getDate() % VERSES.length;
+  document.getElementById('verseText').textContent = '\u201c' + VERSES[vi].text + '\u201d';
+  document.getElementById('verseRef').textContent = '\u2014 ' + VERSES[vi].ref;
+
+  // ── Collapsible ───────────────────────────────────────────────────────────
+
+  function toggle(bodyId, arrowId) {
+    var body = document.getElementById(bodyId);
+    var arrow = document.getElementById(arrowId);
+    var open = body.classList.toggle('open');
+    arrow.textContent = open ? '\u25b2 Hide' : '\u25bc Show';
+  }
+
+  // ── App cards ─────────────────────────────────────────────────────────────
+
+  function renderCards() {
+    var activity = getActivity();
+    var planProgress = {};
+    Object.values(activity).forEach(function(items) {
+      items.forEach(function(id) { planProgress[id] = (planProgress[id] || 0) + 1; });
+    });
+
+    function makeCard(item) {
+      var progress = planProgress[item.id] || 0;
+      var pct = item.total ? Math.min(100, Math.round(progress / item.total * 100)) : 0;
+      var a = document.createElement('a');
+      a.className = 'app-card';
+      a.href = item.href || '#';
+      a.style.background = item.bg;
+      a.innerHTML =
+        '<div class="app-card-icon">' + item.icon + '</div>' +
+        '<div class="app-card-title">' + item.name + '</div>' +
+        '<div class="app-card-sub">' + item.sub + '</div>' +
+        (item.total ? '<div class="app-card-badge">' + progress + ' / ' + item.total + '</div>' : '') +
+        (item.total ? '<div class="progress-bar-wrap"><div class="progress-bar" style="width:' + pct + '%;background:' + (item.badge || item.dot || '#fff') + '"></div></div>' : '');
+      return a;
+    }
+
+    var plansEl = document.getElementById('plansCards');
+    plansEl.innerHTML = '';
+    PLANS.forEach(function(p) { plansEl.appendChild(makeCard(p)); });
+
+    var toolsEl = document.getElementById('toolsCards');
+    toolsEl.innerHTML = '';
+    TOOLS.forEach(function(t) { toolsEl.appendChild(makeCard(t)); });
+
+    var knowEl = document.getElementById('knowCards');
+    knowEl.innerHTML = '';
+    KNOW.forEach(function(k) { knowEl.appendChild(makeCard(k)); });
+  }
+
+  // ── Calendar ──────────────────────────────────────────────────────────────
+
+  var calYear = new Date().getFullYear();
+  var calMonth = new Date().getMonth();
+  var MONTHS = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+
+  function renderCal() {
+    var t = todayISO();
+    var activity = getActivity();
+    document.getElementById('calTitle').textContent = MONTHS[calMonth] + ' ' + calYear;
+    var firstDay = new Date(calYear, calMonth, 1).getDay();
+    var daysInMonth = new Date(calYear, calMonth+1, 0).getDate();
+    var html = '';
+
+    for (var i = 0; i < firstDay; i++) html += '<div class="cal-day empty"></div>';
+
+    for (var d = 1; d <= daysInMonth; d++) {
+      var iso = calYear + '-' + pad(calMonth+1) + '-' + pad(d);
+      var isToday = iso === t;
+      var isFuture = iso > t;
+      var items = activity[iso] || [];
+      var studied = items.length > 0;
+      var cls = 'cal-day' + (isToday?' today':'') + (isFuture?' future':'') + (studied?' studied':'');
+      var dots = items.slice(0,6).map(function(id) {
+        return '<div class="dot" style="background:' + getDotColor(id) + '"></div>';
+      }).join('');
+      html += '<div class="' + cls + '" onclick="openModal(\'' + iso + '\')">'
+        + d + (studied ? '<div class="dot-row">' + dots + '</div>' : '')
+        + '</div>';
+    }
+
+    document.getElementById('calGrid').innerHTML = html;
+
+    var legHTML = LEGEND_ITEMS.map(function(item) {
+      return '<div class="leg-item"><div class="leg-dot" style="background:' + getDotColor(item.id) + '"></div>' + item.label + '</div>';
+    }).join('');
+    document.getElementById('calLegend').innerHTML = legHTML;
+  }
+
+  function changeMonth(dir) {
+    calMonth += dir;
+    if (calMonth > 11) { calMonth = 0; calYear++; }
+    if (calMonth < 0)  { calMonth = 11; calYear--; }
+    renderCal();
+  }
+
+  // ── Stats ─────────────────────────────────────────────────────────────────
+
+  function calcStats() {
+    var activity = getActivity();
+    var allDates = Object.keys(activity).filter(function(d) { return activity[d] && activity[d].length; }).sort(function(a,b) { return b.localeCompare(a); });
+    var now = new Date(), mo = now.getMonth(), yr = now.getFullYear();
+    var monthCount = allDates.filter(function(d) {
+      var dt = new Date(d + 'T12:00:00');
+      return dt.getMonth() === mo && dt.getFullYear() === yr;
+    }).length;
+    var streak = 0;
+    for (var i = 0; i < 365; i++) {
+      var n = new Date(); n.setDate(n.getDate() - i);
+      var iso = n.getFullYear() + '-' + pad(n.getMonth()+1) + '-' + pad(n.getDate());
+      if (activity[iso] && activity[iso].length) streak++;
+      else if (i > 0) break;
+    }
+    document.getElementById('streakVal').textContent = streak;
+    document.getElementById('totalVal').textContent = allDates.length;
+    document.getElementById('monthVal').textContent = monthCount;
+  }
+
+  // ── Modal ─────────────────────────────────────────────────────────────────
+
+  var modalISO = '';
+
+  function openModal(iso) {
+    modalISO = iso;
+    var activity = getActivity();
+    var existing = activity[iso] || [];
+    var isToday = iso === todayISO();
+
+    document.getElementById('modalTitle').textContent = isToday ? '📅 Log Today' : '📅 Edit Day';
+    document.getElementById('modalDateLabel').textContent = friendlyDate(iso);
+    document.getElementById('btnClear').style.display = existing.length ? 'block' : 'none';
+
+    var grid = document.getElementById('checkGrid');
+    grid.innerHTML = '';
+    ALL_ITEMS.forEach(function(item) {
+      var checked = existing.indexOf(item.id) !== -1;
+      var div = document.createElement('div');
+      div.className = 'check-item' + (checked ? ' checked' : '');
+      div.id = 'chk-' + item.id;
+      div.onclick = function() { toggleCheck(item.id); };
+      div.innerHTML =
+        '<div class="ci-dot" style="background:' + (item.dot || '#fff') + '"></div>' +
+        '<div class="ci-name">' + item.icon + ' ' + item.name + '</div>';
+      grid.appendChild(div);
+    });
+
+    document.getElementById('modalBg').classList.add('open');
+  }
+
+  function toggleCheck(id) {
+    document.getElementById('chk-' + id).classList.toggle('checked');
+  }
+
+  function saveDay() {
+    var selected = [];
+    ALL_ITEMS.forEach(function(item) {
+      var el = document.getElementById('chk-' + item.id);
+      if (el && el.classList.contains('checked')) selected.push(item.id);
+    });
+    var activity = getActivity();
+    if (selected.length) activity[modalISO] = selected;
+    else delete activity[modalISO];
+    setActivity(activity);
+    closeModal();
+    renderCal();
+    renderCards();
+    calcStats();
+    showToast(selected.length ? 'Saved \u2014 ' + selected.length + ' item' + (selected.length > 1 ? 's' : '') + ' logged' : 'Day cleared');
+  }
+
+  function clearDay() {
+    var activity = getActivity();
+    delete activity[modalISO];
+    setActivity(activity);
+    closeModal();
+    renderCal();
+    renderCards();
+    calcStats();
+    showToast('Day cleared 🗑');
+  }
+
+  function closeModal() {
+    document.getElementById('modalBg').classList.remove('open');
+  }
+
+  document.getElementById('modalBg').addEventListener('click', function(e) {
+    if (e.target === document.getElementById('modalBg')) closeModal();
+  });
+
+  // ── Toast ─────────────────────────────────────────────────────────────────
+
+  function showToast(msg) {
+    var t = document.getElementById('toast');
+    t.textContent = msg;
+    t.classList.add('show');
+    setTimeout(function() { t.classList.remove('show'); }, 2200);
+  }
+
+  // ── Init ──────────────────────────────────────────────────────────────────
+
+  renderCards();
+  renderCal();
+  calcStats();
+</script>
+</body>
+</html>
